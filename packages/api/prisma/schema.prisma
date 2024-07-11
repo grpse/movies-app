@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id       String   @id @default(uuid())
+  username String   @unique
+  password String
+
+  addedMovies Movie[]
+  moviesReactions MovieReactions[]
+
+  createdAt DateTime @default(now())  @map("created_at")
+
+  @@map("users")
+}
+
+model Movie {
+  id         String  @id @default(uuid())
+  title      String
+  addedByUserId String @map("added_by_user_id")
+  addedByUser       User    @relation(fields: [addedByUserId], references: [id])
+  reactions MovieReactions[]
+
+  createdAt DateTime @default(now())  @map("created_at")
+
+  @@map("movies")
+}
+
+model MovieReactions {
+  id         String  @id @default(uuid())
+  movieId String @map("movie_id")
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  reactedByUserId String @map("reacted_by_user_id")
+  reactedByUser User @relation(fields: [reactedByUserId], references: [id])
+
+  reaction Reaction
+
+  createdAt DateTime @default(now())  @map("created_at")
+
+  @@map("movie_reactions")
+}
+
+enum Reaction {
+  Liked
+}

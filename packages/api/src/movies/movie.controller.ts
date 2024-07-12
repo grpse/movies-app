@@ -22,6 +22,7 @@ import { CreateMovieDto } from './dto/create-movie.dto';
 import { MovieEntity } from './entities/movie';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Reaction } from '@prisma/client';
+import { fieldListPropsIntoObject } from '@/misc/transform';
 
 const numberQuery = (defaultValue = 100) => ({
   transform: (value: string) => (value ? parseInt(value, 10) : defaultValue),
@@ -69,14 +70,32 @@ export class MovieController {
     description: 'The number of movies to skip',
     example: 0,
   })
+  @ApiQuery({
+    name: 'orderBy',
+    type: 'string',
+    required: false,
+    description:
+      'The field(s) to order the movies by, separated by commas. Each field can have either asc or desc to specify the order.',
+    example: 'createdAt.desc,title.asc',
+  })
+  @ApiQuery({
+    name: 'title',
+    type: 'string',
+    required: false,
+    description: 'The title of the movie filter',
+  })
   @Get()
   findAll(
     @Query('limit', numberQuery()) limit = 100,
     @Query('offset', numberQuery(0)) offset = 0,
+    @Query('orderBy') orderBy: string = 'createdAt.desc',
+    @Query('title') title = '',
   ) {
     return this.movieService.findAll({
       limit,
       offset,
+      orderBy: fieldListPropsIntoObject(orderBy),
+      title,
     });
   }
 

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { randomString } from 'test/utils/randomString';
 import { AuthModule } from './auth.module';
+import { Response } from 'express';
 
 describe('auth > AuthController > integration >', () => {
   let controller: AuthController;
@@ -30,7 +31,13 @@ describe('auth > AuthController > integration >', () => {
 
     const signup = await controller.signup({ username, password });
     const user = await authService.validateUser(username, password);
-    const login = await controller.login({ username: user.username, password });
+    const login = await controller.login(
+      { username: user.username, password },
+      {
+        setHeader: () => {},
+        json: () => {},
+      } as any as Response,
+    );
 
     expect(signup).toEqual(
       expect.objectContaining({

@@ -7,11 +7,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  app.setGlobalPrefix('/api');
   app.useBodyParser('json', { limit: '10mb' });
 
   const config = new DocumentBuilder().addBearerAuth().build();
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('/api/docs', app, document);
 
   await app.listen(process.env.PORT || 3000);
 }

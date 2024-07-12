@@ -4,6 +4,7 @@ import {
   UseGuards,
   Body,
   InternalServerErrorException,
+  Response as NestResponse,
 } from '@nestjs/common';
 import { LocalAuthGuard } from './local-auth.guard';
 import { AuthService } from './auth.service';
@@ -12,6 +13,8 @@ import { SignupDto } from './dto/signup.dto';
 import { PRISMA_ERROR_CODE_UNIQUE_CONSTRAINT_ON_FIELD } from '@/prisma.constants';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
+import { jwtConstants } from './constants';
+import { Response } from 'express';
 
 @ApiTags('Auth')
 @Controller('/')
@@ -25,8 +28,14 @@ export class AuthController {
   })
   @UseGuards(LocalAuthGuard)
   @Post('/login')
-  async login(@Body() login: LoginDto) {
-    return this.authService.createAccessToken(login.username);
+  async login(@Body() login: LoginDto, @NestResponse() response: Response) {
+    const { accessToken } = await this.authService.createAccessToken(
+      login.username,
+    );
+    const cookie = `${jwtConstants.jwtTokenCookieName}=${accessToken}; HttpOnly; Path=/; Max-Age=3600`;
+    response.setHeader('Set-Cookie', cookie);
+    response.json({ accessToken });
+    return { accessToken };
   }
 
   @Public()

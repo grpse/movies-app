@@ -1,15 +1,32 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Movie, MovieReactions } from '@prisma/client';
+import { Movie as PrismaMovie } from '@prisma/client';
 
-export class MovieEntity implements Omit<Movie, 'addedByUserId'> {
+export class Movie {
   @ApiProperty()
   id: string;
 
   @ApiProperty()
   title: string;
 
-  reactions: Array<MovieReactions>;
+  @ApiProperty()
+  likes: number;
 
   @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  meLiked: boolean;
+}
+
+export class MovieCreated implements Omit<PrismaMovie, 'addedByUserId'> {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({
+    type: Date,
+  })
   createdAt: Date;
 }

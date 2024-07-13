@@ -1,16 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma.service';
-import { Movie, Reaction } from '@prisma/client';
+import { Movie as PrismaMovie, Reaction } from '@prisma/client';
+import { Movie } from './entities/movie';
 
 interface CreateMovieParams {
   title: string;
   userId: string;
-}
-
-interface UpdateMovieParams {
-  userId: string;
-  movieId: string;
-  title?: string;
 }
 
 @Injectable()
@@ -30,57 +25,60 @@ export class MovieService {
     });
   }
 
-  findAll({
+  async findAll({
     limit = 100,
     offset = 0,
     orderBy = {},
     title = '',
+    currentUserId,
   }: {
     limit?: number;
     offset?: number;
-    orderBy?: { [K in keyof Movie]?: 'desc' | 'asc' };
+    orderBy?: { [K in keyof PrismaMovie]?: 'desc' | 'asc' };
     title?: string;
+    currentUserId: string;
   }) {
-    return this.prisma.movie.findMany({
-      take: limit,
-      skip: offset,
-      orderBy,
+    const movies = await this.prisma.movie.findMany({
       where: {
         title: {
           mode: 'insensitive',
           contains: title,
         },
       },
-      include: {
+      orderBy,
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
         _count: {
           select: {
-            reactions: {
-              where: {
-                reaction: Reaction.Liked,
-              },
-            },
+            reactions: true,
+          },
+        },
+        reactions: {
+          where: {
+            reactedByUserId: currentUserId,
           },
         },
       },
     });
-  }
 
-  async update({ userId, movieId, title }: UpdateMovieParams) {
-    const movie = await this.prisma.movie.update({
-      where: { id: movieId, addedByUserId: userId },
-      data: {
-        title,
-      },
+    return movies.map((movie) => {
+      return {
+        id: movie.id,
+        title: movie.title,
+        createdAt: movie.createdAt,
+        meLiked: movie.reactions.some(
+          (reaction) => reaction.reactedByUserId === currentUserId,
+        ),
+        likes: movie._count.reactions,
+      } as Movie;
     });
-
-    if (!movie) {
-      throw new BadRequestException(`Movie with id ${movieId} not found`);
-    }
-
-    return movie;
   }
 
-  async addMovieReactionFromUser({
+  async toggleMovieReactionFromUser({
     userId,
     movieId,
     reaction,
@@ -97,9 +95,8 @@ export class MovieService {
     });
 
     if (existingReaction) {
-      await this.prisma.movieReactions.update({
+      await this.prisma.movieReactions.deleteMany({
         where: { id: existingReaction.id },
-        data: { reaction },
       });
     } else {
       await this.prisma.movieReactions.create({
@@ -110,5 +107,20 @@ export class MovieService {
         },
       });
     }
+  }
+
+  async removeMovieReactionFromUser({
+    userId,
+    movieId,
+  }: {
+    userId: string;
+    movieId: string;
+  }) {
+    await this.prisma.movieReactions.deleteMany({
+      where: {
+        movieId,
+        reactedByUserId: userId,
+      },
+    });
   }
 }

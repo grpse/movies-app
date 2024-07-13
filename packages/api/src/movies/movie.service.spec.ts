@@ -35,7 +35,9 @@ describe('movies > MovieService > integration >', () => {
       title: movieTitle,
       userId: user.id,
     });
-    const result = await service.findAll({});
+    const result = await service.findAll({
+      currentUserId: user.id,
+    });
 
     expect(result).toEqual(
       expect.arrayContaining([
@@ -44,11 +46,6 @@ describe('movies > MovieService > integration >', () => {
         }),
       ]),
     );
-  });
-
-  it('should call findAll and return an empty array', async () => {
-    const result = await service.findAll({});
-    expect(result).toEqual([]);
   });
 
   it('should call create and return a created movie', async () => {
@@ -61,22 +58,6 @@ describe('movies > MovieService > integration >', () => {
     expect(movieCreated).toEqual(expect.objectContaining({ ...movieData }));
   });
 
-  it('should call update and return the updated movie', async () => {
-    const user = await createNewUser();
-    const movieData = { title: 'Test Movie' };
-    const createdMovie = await service.create({
-      ...movieData,
-      userId: user.id,
-    });
-    const updateMovie = { title: 'Updated Test Movie' };
-    const result = await service.update({
-      ...updateMovie,
-      userId: user.id,
-      movieId: createdMovie.id,
-    });
-    expect(result).toEqual(expect.objectContaining({ ...updateMovie }));
-  });
-
   it('should add reaction and fetch it from prisma client', async () => {
     const user = await createNewUser();
     const movieData = { title: 'Test Movie' };
@@ -85,13 +66,13 @@ describe('movies > MovieService > integration >', () => {
       userId: user.id,
     });
 
-    await service.addMovieReactionFromUser({
+    await service.toggleMovieReactionFromUser({
       userId: user.id,
       movieId: createdMovie.id,
       reaction: Reaction.Liked,
     });
     // just update the reaction
-    await service.addMovieReactionFromUser({
+    await service.toggleMovieReactionFromUser({
       userId: user.id,
       movieId: createdMovie.id,
       reaction: Reaction.Liked,
@@ -105,6 +86,7 @@ describe('movies > MovieService > integration >', () => {
     });
 
     const movies = await service.findAll({
+      currentUserId: user.id,
       limit: 1,
       offset: 0,
       orderBy: {
@@ -113,7 +95,7 @@ describe('movies > MovieService > integration >', () => {
     });
 
     expect(reactionFromPrisma.reaction).toBe(Reaction.Liked);
-    expect(movies[0]._count.reactions).toBe(1);
+    expect(movies[0].likes).toBe(1);
   });
 
   it('should add reactions from different users and sum the reactions', async () => {
@@ -125,18 +107,19 @@ describe('movies > MovieService > integration >', () => {
       userId: user1.id,
     });
 
-    await service.addMovieReactionFromUser({
+    await service.toggleMovieReactionFromUser({
       userId: user1.id,
       movieId: createdMovie.id,
       reaction: Reaction.Liked,
     });
-    await service.addMovieReactionFromUser({
+    await service.toggleMovieReactionFromUser({
       userId: user2.id,
       movieId: createdMovie.id,
       reaction: Reaction.Liked,
     });
 
     const movies = await service.findAll({
+      currentUserId: user1.id,
       limit: 1,
       offset: 0,
       orderBy: {
@@ -144,6 +127,6 @@ describe('movies > MovieService > integration >', () => {
       },
     });
 
-    expect(movies[0]._count.reactions).toBe(2);
+    expect(movies[0].likes).toBe(2);
   });
 });

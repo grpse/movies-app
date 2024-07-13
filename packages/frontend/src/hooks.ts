@@ -34,17 +34,28 @@ export const useApiCall = <T = unknown>(
   const [loading, setLoading] = useState<boolean>(false);
   const axiosInstance = useAxiosWithCredentials();
 
-  const callApi = async <T = unknown>(data: T) => {
+  const callApi = async <TBody>(
+    data: TBody,
+    endpointComplement = ""
+  ): Promise<{ data: T | null; error: string | null }> => {
     setLoading(true);
     try {
-      const response = await axiosInstance({
+      const response = await axiosInstance<T>({
         method,
-        url: `/api${endpoint}`,
+        url: `/api${endpoint}${endpointComplement}`,
         data,
       });
       setData(response.data);
+      return {
+        data: response.data,
+        error: null,
+      };
     } catch (err: any) {
       setError(err.message || "An error occurred");
+      return {
+        data: null,
+        error: err.message || "An error occurred",
+      };
     } finally {
       setLoading(false);
     }

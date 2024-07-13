@@ -57,34 +57,10 @@ describe('movies > MovieController > integration >', () => {
       userId: user.id,
     });
 
-    const usermovies = await controller.findAll();
+    const usermovies = await controller.findAll(user);
 
     expect(usermovies).toEqual(
       expect.arrayContaining([expect.objectContaining(createMovieDto)]),
     );
-  });
-
-  it('should update movies', async () => {
-    const user = await createNewUser();
-    const createMovieDto = {
-      title: 'Test Title',
-      description: 'Test Description',
-    };
-    const movieEntity = await moviesService.create({
-      ...createMovieDto,
-      userId: user.id,
-    });
-
-    const updateMovieDto = {
-      title: 'Updated Test Title',
-    };
-
-    const updatedMovie = await controller.update(
-      user,
-      movieEntity.id,
-      updateMovieDto,
-    );
-
-    expect(updatedMovie).toEqual(expect.objectContaining(updateMovieDto));
   });
 });

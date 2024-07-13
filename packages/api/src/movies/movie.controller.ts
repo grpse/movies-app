@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Put } from '@nestjs/common';
 import { MovieService } from './movie.service';
 import {
   ApiBadRequestResponse,
@@ -19,8 +11,7 @@ import {
 import { AuthedUser } from '@/auth/user.decorator';
 import { AuthedUserModel } from '@/auth/models/authed-user.model';
 import { CreateMovieDto } from './dto/create-movie.dto';
-import { MovieEntity } from './entities/movie';
-import { UpdateMovieDto } from './dto/update-movie.dto';
+import { Movie, MovieCreated } from './entities/movie';
 import { Reaction } from '@prisma/client';
 import { fieldListPropsIntoObject } from '@/misc/transform';
 
@@ -37,7 +28,7 @@ export class MovieController {
   @ApiResponse({
     status: 201,
     description: 'The movie has been successfully created.',
-    type: MovieEntity,
+    type: MovieCreated,
   })
   @Post()
   create(
@@ -54,7 +45,7 @@ export class MovieController {
   @ApiResponse({
     status: 200,
     description: 'The list of movies for the current user',
-    type: [MovieEntity],
+    type: [Movie],
   })
   @ApiQuery({
     name: 'limit',
@@ -86,6 +77,7 @@ export class MovieController {
   })
   @Get()
   findAll(
+    @AuthedUser() user: AuthedUserModel,
     @Query('limit', numberQuery()) limit = 100,
     @Query('offset', numberQuery(0)) offset = 0,
     @Query('orderBy') orderBy: string = 'createdAt.desc',
@@ -96,13 +88,13 @@ export class MovieController {
       offset,
       orderBy: fieldListPropsIntoObject(orderBy),
       title,
+      currentUserId: user.id,
     });
   }
 
   @ApiResponse({
     status: 201,
-    description: 'Updated movie',
-    type: MovieEntity,
+    description: 'Toggle reaction of like to the movie',
   })
   @ApiBadRequestResponse({
     description: 'Movie was not found',
@@ -113,38 +105,12 @@ export class MovieController {
     required: true,
     description: 'The id of the movie',
   })
-  @Patch(':movieId')
-  update(
-    @AuthedUser() user: AuthedUserModel,
-    @Param('movieId') movieId: string,
-    @Body() updateMovieData: UpdateMovieDto,
-  ) {
-    return this.movieService.update({
-      userId: user.id,
-      movieId,
-      ...updateMovieData,
-    });
-  }
-
-  @ApiResponse({
-    status: 201,
-    description: 'Added reaction of like to the movie',
-  })
-  @ApiBadRequestResponse({
-    description: 'Movie was not found',
-  })
-  @ApiParam({
-    name: 'movieId',
-    type: 'string',
-    required: true,
-    description: 'The id of the movie',
-  })
-  @Post(':movieId/like')
-  likeMovie(
+  @Put(':movieId/toggle/like')
+  toggleLikeMovie(
     @AuthedUser() user: AuthedUserModel,
     @Param('movieId') movieId: string,
   ): Promise<void> {
-    return this.movieService.addMovieReactionFromUser({
+    return this.movieService.toggleMovieReactionFromUser({
       userId: user.id,
       movieId,
       reaction: Reaction.Liked,

@@ -32,8 +32,7 @@ export class AuthController {
     const { accessToken } = await this.authService.createAccessToken(
       login.username,
     );
-    const cookie = `${jwtConstants.jwtTokenCookieName}=${accessToken}; HttpOnly; Path=/; Max-Age=3600`;
-    response.setHeader('Set-Cookie', cookie);
+    response.cookie(jwtConstants.jwtTokenCookieName, accessToken);
     response.json({ accessToken });
     return { accessToken };
   }

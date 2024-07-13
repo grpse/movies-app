@@ -1,14 +1,16 @@
 'use client';
+
 import Movies from "../components/movies";
 import { useLoggedSession } from "../hooks";
-import { useRouter } from "next/navigation";
+
 
 export default function Main() {
   const { isLoggedIn, logout } = useLoggedSession();
-  const router = useRouter();
 
   if (!isLoggedIn) {
-    router.push('/auth/login');
+    if (typeof window !== 'undefined') {
+      window.location.pathname = '/auth/login';
+    }
     return;
   }
 

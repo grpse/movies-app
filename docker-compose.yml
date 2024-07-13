@@ -1,18 +1,5 @@
 
 services:
-  api:
-    container_name: movie_manager_api
-    build:
-      context: packages/api
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/movie_manager_db
-
   db:
     container_name: postgres_db
     image: postgres:latest
